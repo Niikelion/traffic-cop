@@ -1,4 +1,4 @@
-import type { CaddyAdmin, CaddyConfig, CaddyServer } from "./caddy/api"
+import { CaddyAdminError, type CaddyAdmin, type CaddyConfig, type CaddyServer } from "./caddy/api"
 
 /** Options for {@link ensureCaddyServer}. */
 export interface BootstrapOptions {
@@ -8,6 +8,8 @@ export interface BootstrapOptions {
     listen?: string[]
     /** ACME account email. When set, Caddy uses it for Let's Encrypt registration. */
     email?: string
+    /** How many times to retry when a concurrent config change is detected (HTTP 412). Default 5. */
+    maxAttempts?: number
 }
 
 const withAcmeEmail = (tls: unknown, email: string): unknown => {
@@ -26,32 +28,45 @@ const withAcmeEmail = (tls: unknown, email: string): unknown => {
  * automatically. Reads the current config, merges the server in (preserving existing routes and
  * any unrelated config), and writes it back with `POST /load`.
  *
- * This assumes the router is the sole writer of Caddy's config. It is not safe against another
- * process changing the config between the read and the write.
+ * The read and the write are separate requests, so a concurrent change would otherwise be lost.
+ * The write is guarded by the read's ETag (`If-Match`); on a collision Caddy returns HTTP 412 and
+ * the whole read-merge-write is retried up to `maxAttempts` times.
  * @param caddy the Caddy admin client
- * @param options the server name, listen addresses, and optional ACME email
+ * @param options the server name, listen addresses, ACME email, and retry count
  */
 export const ensureCaddyServer = async (caddy: CaddyAdmin, options: BootstrapOptions): Promise<void> => {
     const listen = options.listen ?? [":443"]
-    const config: CaddyConfig = (await caddy.getConfig()) ?? {}
+    const maxAttempts = options.maxAttempts ?? 5
 
-    const apps = config.apps ?? {}
-    const http = apps.http ?? {}
-    const servers = http.servers ?? {}
-    const existing: CaddyServer | undefined = servers[options.server]
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const { config: current, etag } = await caddy.getConfig()
+        const config: CaddyConfig = current ?? {}
 
-    const server: CaddyServer = existing
-        ? { ...existing, listen: [...new Set([...(existing.listen ?? []), ...listen])] }
-        : { listen, routes: [] }
+        const apps = config.apps ?? {}
+        const http = apps.http ?? {}
+        const servers = http.servers ?? {}
+        const existing: CaddyServer | undefined = servers[options.server]
 
-    const next: CaddyConfig = {
-        ...config,
-        apps: {
-            ...apps,
-            http: { ...http, servers: { ...servers, [options.server]: server } },
-            ...(options.email === undefined ? {} : { tls: withAcmeEmail(apps.tls, options.email) }),
-        },
+        const server: CaddyServer = existing
+            ? { ...existing, listen: [...new Set([...(existing.listen ?? []), ...listen])] }
+            : { listen, routes: [] }
+
+        const next: CaddyConfig = {
+            ...config,
+            apps: {
+                ...apps,
+                http: { ...http, servers: { ...servers, [options.server]: server } },
+                ...(options.email === undefined ? {} : { tls: withAcmeEmail(apps.tls, options.email) }),
+            },
+        }
+
+        try {
+            await caddy.load(next, etag)
+            return
+        } catch (error) {
+            const collision = error instanceof CaddyAdminError && error.status === 412
+            if (!collision || attempt === maxAttempts) throw error
+            // Config changed under us; re-read and retry.
+        }
     }
-
-    await caddy.load(next)
 }

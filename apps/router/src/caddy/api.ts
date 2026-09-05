@@ -1,4 +1,4 @@
-import { request as httpRequest, type RequestOptions } from "node:http"
+import { request as httpRequest, type IncomingMessage, type RequestOptions } from "node:http"
 
 /** How to reach the Caddy admin API. */
 export interface CaddyAdminOptions {
@@ -51,22 +51,20 @@ export class CaddyAdminError extends Error {
     }
 }
 
-/**
- * Make one request to the Caddy admin API.
- * @param options endpoint and timeout
- * @param method HTTP method
- * @param path admin path, e.g. `"/config/apps/http"`
- * @param body optional JSON body
- * @returns the parsed JSON response, or `undefined` for an empty body
- */
-export const adminRequest = <T = unknown>(
+interface AdminRaw {
+    status: number
+    etag?: string
+    text: string
+}
+
+const sendAdmin = (
     options: CaddyAdminOptions,
     method: string,
     path: string,
-    body?: unknown,
-): Promise<T> => {
+    init: { body?: unknown; headers?: Record<string, string> } = {},
+): Promise<AdminRaw> => {
     const target = resolveTarget(options.endpoint ?? DEFAULT_ENDPOINT)
-    const payload = body === undefined ? undefined : JSON.stringify(body)
+    const payload = init.body === undefined ? undefined : JSON.stringify(init.body)
 
     const requestOptions: RequestOptions = {
         socketPath: target.socketPath,
@@ -77,29 +75,23 @@ export const adminRequest = <T = unknown>(
         headers: {
             Host: target.host ?? "localhost",
             ...(payload === undefined ? {} : { "Content-Type": "application/json" }),
+            ...init.headers,
         },
         timeout: options.timeoutMs ?? DEFAULT_TIMEOUT,
     }
 
-    return new Promise<T>((resolve, reject) => {
-        const req = httpRequest(requestOptions, res => {
+    return new Promise<AdminRaw>((resolve, reject) => {
+        const req = httpRequest(requestOptions, (res: IncomingMessage) => {
             const chunks: Buffer[] = []
             res.on("data", (chunk: Buffer) => chunks.push(chunk))
             res.on("end", () => {
-                const text = Buffer.concat(chunks).toString("utf8")
-                const status = res.statusCode ?? 0
-                if (status < 200 || status >= 300) {
-                    let detail = text
-                    try {
-                        const parsed = JSON.parse(text) as { error?: string }
-                        if (parsed.error) detail = parsed.error
-                    } catch {
-                        // Non-JSON error body; use the raw text.
-                    }
-                    reject(new CaddyAdminError(status, method, path, detail || "(no body)"))
-                    return
-                }
-                resolve((text ? (JSON.parse(text) as T) : undefined) as T)
+                const etagHeader: string | string[] | undefined = res.headers.etag
+                const etag = typeof etagHeader === "string" ? etagHeader : etagHeader?.[0]
+                resolve({
+                    status: res.statusCode ?? 0,
+                    ...(etag === undefined ? {} : { etag }),
+                    text: Buffer.concat(chunks).toString("utf8"),
+                })
             })
         })
 
@@ -110,6 +102,39 @@ export const adminRequest = <T = unknown>(
         if (payload !== undefined) req.write(payload)
         req.end()
     })
+}
+
+const errorDetail = (text: string): string => {
+    try {
+        const parsed = JSON.parse(text) as { error?: string }
+        if (parsed.error) return parsed.error
+    } catch {
+        // Non-JSON error body; fall through to the raw text.
+    }
+    return text || "(no body)"
+}
+
+/**
+ * Make one request to the Caddy admin API, throwing {@link CaddyAdminError} on any non-2xx status.
+ * @param options endpoint and timeout
+ * @param method HTTP method
+ * @param path admin path, e.g. `"/config/apps/http"`
+ * @param body optional JSON body
+ * @param headers optional extra request headers (e.g. `If-Match`)
+ * @returns the parsed JSON response, or `undefined` for an empty body
+ */
+export const adminRequest = async <T = unknown>(
+    options: CaddyAdminOptions,
+    method: string,
+    path: string,
+    body?: unknown,
+    headers?: Record<string, string>,
+): Promise<T> => {
+    const res = await sendAdmin(options, method, path, { body, headers })
+    if (res.status < 200 || res.status >= 300) {
+        throw new CaddyAdminError(res.status, method, path, errorDetail(res.text))
+    }
+    return (res.text ? (JSON.parse(res.text) as T) : undefined) as T
 }
 
 /** A reverse-proxy route, addressed by a stable id. */
@@ -173,10 +198,17 @@ export interface CaddyAdmin {
     removeRoute: (id: string) => Promise<boolean>
     /** List the managed routes (those carrying an `@id`) on the configured server. */
     listRoutes: () => Promise<ProxyRoute[]>
-    /** Read Caddy's entire configuration (`GET /config/`); `null` when Caddy has no config loaded. */
-    getConfig: () => Promise<CaddyConfig | null>
-    /** Replace Caddy's entire configuration (`POST /load`). */
-    load: (config: unknown) => Promise<void>
+    /**
+     * Read Caddy's entire configuration (`GET /config/`) together with its `ETag`. `config` is
+     * `null` when Caddy has no config loaded; `etag` may be undefined if the server sent none.
+     */
+    getConfig: () => Promise<{ config: CaddyConfig | null; etag?: string }>
+    /**
+     * Replace Caddy's entire configuration (`POST /load`). Pass `ifMatch` (an ETag from
+     * {@link getConfig}) for an optimistic-concurrency write: Caddy rejects it with HTTP 412 if the
+     * config changed since, surfaced as a {@link CaddyAdminError} with `status === 412`.
+     */
+    load: (config: unknown, ifMatch?: string) => Promise<void>
     /** Whether the admin API is reachable. */
     reachable: () => Promise<boolean>
 }
@@ -222,8 +254,16 @@ export const createCaddyAdmin = (options: CaddyAdminOptions, server = "srv0"): C
             const routes = (await adminRequest<CaddyRoute[] | null>(options, "GET", routesPath(server))) ?? []
             return routes.filter(route => typeof route["@id"] === "string").map(fromCaddyRoute)
         },
-        getConfig: async () => (await adminRequest<CaddyConfig | null>(options, "GET", "/config/")) ?? null,
-        load: config => adminRequest(options, "POST", "/load", config),
+        getConfig: async () => {
+            const res = await sendAdmin(options, "GET", "/config/")
+            if (res.status < 200 || res.status >= 300) {
+                throw new CaddyAdminError(res.status, "GET", "/config/", errorDetail(res.text))
+            }
+            const config = res.text ? (JSON.parse(res.text) as CaddyConfig | null) : null
+            return { config: config ?? null, ...(res.etag === undefined ? {} : { etag: res.etag }) }
+        },
+        load: (config, ifMatch) =>
+            adminRequest(options, "POST", "/load", config, ifMatch === undefined ? undefined : { "If-Match": ifMatch }),
         reachable: async () => {
             try {
                 await adminRequest(options, "GET", "/config/")
