@@ -6,12 +6,11 @@ on:
 concurrency: release-${{ github.ref }}
 
 jobs:
-    release:
+    version:
         runs-on: ubuntu-latest
         permissions:
-            contents: write # push tags, create the version PR branch
+            contents: write # create/update the version PR branch
             pull-requests: write # open/update the "Version Packages" PR
-            id-token: write # npm provenance
         steps:
             - name: Enable Corepack
               run: corepack enable
@@ -21,20 +20,15 @@ jobs:
               with:
                   node-version: '24.x'
                   cache: 'yarn'
-                  registry-url: 'https://registry.npmjs.org'
             - name: Install dependencies
               run: yarn install --immutable
-            - name: Create Version PR or publish
+            - name: Create or update the Version Packages PR
               uses: changesets/action@v1
               with:
                   version: yarn changeset version
-                  publish: yarn release
                   commit: 'chore: version packages'
                   title: 'chore: version packages'
               env:
-                  # A PAT or GitHub App token (NOT the default GITHUB_TOKEN) so the Version PR this
-                  # action opens triggers the CI workflow and can satisfy required status checks.
-                  GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-                  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-                  NPM_CONFIG_PROVENANCE: 'true'
+                  # The built-in token — no secret to provide. It cannot trigger CI on the PR it
+                  # opens, so admin-merge the Version Packages PR (its contents are generated).
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
