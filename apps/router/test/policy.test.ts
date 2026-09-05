@@ -30,9 +30,14 @@ describe("routerPolicySchema", () => {
         expect(policy.accounts["1001"]?.hosts).toEqual(["a.example.com"])
     })
 
-    it("defaults accounts and hosts", () => {
-        expect(routerPolicySchema.parse({})).toEqual({ accounts: {} })
+    it("defaults accounts, groups, and hosts", () => {
+        expect(routerPolicySchema.parse({})).toEqual({ accounts: {}, groups: {} })
         expect(routerPolicySchema.parse({ accounts: { "1": {} } }).accounts["1"]?.hosts).toEqual([])
+    })
+
+    it("parses group rules", () => {
+        const policy = routerPolicySchema.parse({ groups: { "2000": { hosts: ["team.example.com"] } } })
+        expect(policy.groups["2000"]?.hosts).toEqual(["team.example.com"])
     })
 
     it("rejects a non-string host", () => {
@@ -43,7 +48,7 @@ describe("routerPolicySchema", () => {
 describe("createPolicyStore", () => {
     it("is empty when given no path", () => {
         const store = createPolicyStore(undefined)
-        expect(store.current()).toEqual({ accounts: {} })
+        expect(store.current()).toEqual({ accounts: {}, groups: {} })
         store.close()
     })
 
@@ -61,7 +66,7 @@ describe("createPolicyStore", () => {
         let errored = false
         const store = createPolicyStore(path, { onError: () => (errored = true) })
         expect(errored).toBe(true)
-        expect(store.current()).toEqual({ accounts: {} })
+        expect(store.current()).toEqual({ accounts: {}, groups: {} })
         store.close()
     })
 

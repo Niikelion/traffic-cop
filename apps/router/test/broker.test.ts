@@ -38,8 +38,8 @@ const makeCaddy = () => {
     return { caddy, routes }
 }
 
-const ctx = (uid: number): LocalRpcContext => ({
-    peer: { uid, gid: uid, pid: 100 },
+const ctx = (uid: number, groups: number[] = []): LocalRpcContext => ({
+    peer: { uid, gid: groups[0] ?? uid, pid: 100, supplementaryGids: groups.slice(1) },
     requestId: "test",
     signal: new AbortController().signal,
 })
@@ -48,6 +48,9 @@ const policy: RouterPolicy = {
     accounts: {
         "1001": { hosts: ["alice.example.com", "*.alice.example.com"] },
         "1002": { hosts: ["bob.example.com"] },
+    },
+    groups: {
+        "2000": { hosts: ["team.example.com", "*.team.example.com"] },
     },
 }
 
@@ -63,7 +66,8 @@ describe("registerRouterMethods", () => {
         registerRouterMethods(rpcParts.rpc, caddyParts.caddy, () => policy)
     })
 
-    const upsert = (input: unknown, uid: number) => handlers.get(upsertRoute.method)!(input, ctx(uid))
+    const upsert = (input: unknown, uid: number, groups: number[] = []) =>
+        handlers.get(upsertRoute.method)!(input, ctx(uid, groups))
     const remove = (input: unknown, uid: number) => handlers.get(removeRoute.method)!(input, ctx(uid))
     const list = (uid: number) => handlers.get(listRoutes.method)!({}, ctx(uid))
 
@@ -88,8 +92,33 @@ describe("registerRouterMethods", () => {
 
     it("rejects a caller with no account entry", async () => {
         await expect(upsert({ id: "app", host: "alice.example.com", upstream: "localhost:3000" }, 9999)).rejects.toThrow(
-            /not a registered account/,
+            /not a registered account or group member/,
         )
+    })
+
+    it("allows a host granted through the caller's primary group", async () => {
+        // uid 3001 has no account entry, but its primary group 2000 grants team.example.com.
+        const result = await upsert({ id: "svc", host: "team.example.com", upstream: "localhost:3000" }, 3001, [2000])
+        expect(result).toEqual({ id: "svc" })
+        expect(routes[0]).toEqual({ id: "acct-3001:svc", host: ["team.example.com"], upstream: "localhost:3000" })
+    })
+
+    it("allows a group host via a supplementary group", async () => {
+        await upsert({ id: "svc", host: "x.team.example.com", upstream: "localhost:3000" }, 3002, [500, 2000])
+        expect(routes[0]?.host).toEqual(["x.team.example.com"])
+    })
+
+    it("combines the caller's account and group grants", async () => {
+        // uid 1001 (account: alice) is also in group 2000 (team).
+        await upsert({ id: "a", host: "alice.example.com", upstream: "localhost:3000" }, 1001, [2000])
+        await upsert({ id: "t", host: "team.example.com", upstream: "localhost:4000" }, 1001, [2000])
+        expect(routes.map(route => route.id)).toEqual(["acct-1001:a", "acct-1001:t"])
+    })
+
+    it("rejects a group host when the caller is not in that group", async () => {
+        await expect(
+            upsert({ id: "svc", host: "team.example.com", upstream: "localhost:3000" }, 1002),
+        ).rejects.toThrow(/not allowed to route/)
     })
 
     it("keeps accounts isolated by scoping the same id per uid", async () => {

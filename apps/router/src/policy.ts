@@ -2,22 +2,24 @@ import { readFileSync, watch, type FSWatcher } from "node:fs"
 import { basename, dirname, resolve } from "node:path"
 import { z } from "zod"
 
-/** What one account (identified by uid) is allowed to register. */
-export const accountPolicySchema = z.object({
-    /** Exact hostnames or `"*.suffix"` wildcards this account may route. */
+/** A set of hostnames a caller (by uid) or group (by gid) is allowed to register. */
+export const hostRuleSchema = z.object({
+    /** Exact hostnames or `"*.suffix"` wildcards this rule permits. */
     hosts: z.array(z.string()).default([]),
 })
 
-/** The authorization policy: which uid may register which hostnames. */
+/** The authorization policy. A caller is allowed a host if its uid rule or any of its group rules permits it. */
 export const routerPolicySchema = z.object({
-    /** Keyed by caller uid (as a string, since JSON object keys are strings). */
-    accounts: z.record(z.string(), accountPolicySchema).default({}),
+    /** Keyed by caller uid (a string, since JSON object keys are strings). */
+    accounts: z.record(z.string(), hostRuleSchema).default({}),
+    /** Keyed by group gid (a string). Applies to any caller whose primary or supplementary groups include it. */
+    groups: z.record(z.string(), hostRuleSchema).default({}),
 })
 
-export type AccountPolicy = z.infer<typeof accountPolicySchema>
+export type HostRule = z.infer<typeof hostRuleSchema>
 export type RouterPolicy = z.infer<typeof routerPolicySchema>
 
-const EMPTY_POLICY: RouterPolicy = { accounts: {} }
+const EMPTY_POLICY: RouterPolicy = { accounts: {}, groups: {} }
 const RELOAD_DEBOUNCE_MS = 100
 
 /** A live view of the router policy that reloads when its file changes. */

@@ -69,11 +69,21 @@ means an empty policy (every caller rejected until it exists).
     "accounts": {
         "1001": { "hosts": ["alice.example.com", "*.alice.example.com"] },
         "1002": { "hosts": ["bob.example.com"] }
+    },
+    "groups": {
+        "2000": { "hosts": ["team.example.com", "*.team.example.com"] }
     }
 }
 ```
 
-Hostnames are exact matches or `*.suffix` wildcards. A uid with no entry is rejected.
+- `accounts` is keyed by **uid**; `groups` is keyed by **gid** and applies to every caller whose
+  primary or supplementary groups include that gid (both come from the kernel, `SO_PEERCRED` /
+  `SO_PEERGROUPS`).
+- A caller may register a host if its uid rule **or** any of its group rules permits it.
+- Hostnames are exact matches or `*.suffix` wildcards.
+- Routes are always owned by the registering uid (`acct-<uid>:<id>`), even when access came via a
+  group — so group members manage their own routes, not each other's.
+- A caller with neither an account entry nor a matching group entry is rejected.
 
 ## Upstreams
 
