@@ -6,11 +6,12 @@ on:
 concurrency: release-${{ github.ref }}
 
 jobs:
-    version:
+    release:
         runs-on: ubuntu-latest
         permissions:
-            contents: write # create/update the version PR branch
+            contents: write # create the version PR branch; push tags on publish
             pull-requests: write # open/update the "Version Packages" PR
+            id-token: write # npm trusted publishing (OIDC) + provenance
         steps:
             - name: Enable Corepack
               run: corepack enable
@@ -20,15 +21,20 @@ jobs:
               with:
                   node-version: '24.x'
                   cache: 'yarn'
+                  registry-url: 'https://registry.npmjs.org'
+            - name: Update npm for OIDC trusted publishing (needs >= 11.5)
+              run: npm install -g npm@latest
             - name: Install dependencies
               run: yarn install --immutable
-            - name: Create or update the Version Packages PR
+            - name: Version PR, or publish via OIDC
               uses: changesets/action@v1
               with:
                   version: yarn changeset version
+                  publish: yarn release
                   commit: 'chore: version packages'
                   title: 'chore: version packages'
               env:
-                  # The built-in token — no secret to provide. It cannot trigger CI on the PR it
-                  # opens, so admin-merge the Version Packages PR (its contents are generated).
+                  # Built-in token opens the Version PR and pushes tags — no secret to provide.
+                  # npm auth is OIDC (trusted publishing); no NPM_TOKEN.
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  NPM_CONFIG_PROVENANCE: 'true'
