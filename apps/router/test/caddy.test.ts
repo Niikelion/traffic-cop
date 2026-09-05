@@ -1,5 +1,6 @@
+import { createServer } from "node:http"
 import { describe, expect, it } from "vitest"
-import { resolveTarget, toCaddyRoute } from "../src/caddy/api"
+import { adminRequest, resolveTarget, toCaddyRoute } from "../src/caddy/api"
 
 describe("resolveTarget", () => {
     it("parses a TCP url with the default admin port", () => {
@@ -33,5 +34,24 @@ describe("toCaddyRoute", () => {
             "a.example.com",
             "b.example.com",
         ])
+    })
+})
+
+describe("adminRequest", () => {
+    it("sends a Host header with the port so Caddy's origin check passes", async () => {
+        let seenHost: string | undefined
+        const server = createServer((req, res) => {
+            seenHost = req.headers.host
+            res.end("{}")
+        })
+        await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve))
+        const address = server.address()
+        const port = typeof address === "object" && address !== null ? address.port : 0
+        try {
+            await adminRequest({ endpoint: `http://127.0.0.1:${String(port)}` }, "GET", "/config/")
+            expect(seenHost).toBe(`127.0.0.1:${String(port)}`)
+        } finally {
+            server.close()
+        }
     })
 })

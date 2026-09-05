@@ -73,7 +73,12 @@ const sendAdmin = (
         path,
         method,
         headers: {
-            Host: target.host ?? "localhost",
+            // Caddy's admin API enforces an origin check: for TCP the Host header must match the
+            // admin address including the port, or it answers 403. (Unix-socket admin doesn't.)
+            Host:
+                target.socketPath === undefined
+                    ? `${target.host ?? "localhost"}:${String(target.port ?? 2019)}`
+                    : "localhost",
             ...(payload === undefined ? {} : { "Content-Type": "application/json" }),
             ...init.headers,
         },
