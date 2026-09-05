@@ -3,6 +3,7 @@ import { createApp, type NoEvents } from "@signalbox/core"
 import { localRpcPlugin } from "@signalbox/local-rpc"
 import { createPermissionExecution, entityRef } from "@signalbox/permissions"
 import { createCaddyAdmin } from "./caddy/api"
+import { ensureCaddyServer } from "./bootstrap"
 import { registerRouterMethods, type RouterPolicy } from "./broker"
 
 /** Runtime configuration for the router, from the environment. */
@@ -12,6 +13,7 @@ interface RouterConfig {
     caddyEndpoint: string
     caddyServer: string
     policyPath?: string
+    acmeEmail?: string
 }
 
 const readConfig = (): RouterConfig => ({
@@ -20,6 +22,7 @@ const readConfig = (): RouterConfig => ({
     caddyEndpoint: process.env["CADDY_ADMIN"] ?? "http://localhost:2019",
     caddyServer: process.env["CADDY_SERVER"] ?? "srv0",
     policyPath: process.env["TRAFFIC_COP_POLICY"],
+    acmeEmail: process.env["ACME_EMAIL"],
 })
 
 const loadPolicy = (path?: string): RouterPolicy => {
@@ -51,10 +54,14 @@ const main = async (): Promise<void> => {
     // Register the RPC surface before the app starts accepting connections.
     registerRouterMethods(rpc, caddy, policy)
 
-    // TODO: bootstrap Caddy's http app + `:443` server here via `caddy.load(...)` when absent,
-    // so automatic HTTPS applies to every route the broker later adds.
-    if (!(await caddy.reachable())) {
-        console.warn(`caddy admin not reachable at ${config.caddyEndpoint}; routes will fail until it is up`)
+    // Ensure Caddy has a `:443` server so automatic HTTPS applies to every route we later add.
+    if (await caddy.reachable()) {
+        await ensureCaddyServer(caddy, {
+            server: config.caddyServer,
+            ...(config.acmeEmail === undefined ? {} : { email: config.acmeEmail }),
+        })
+    } else {
+        console.warn(`caddy admin not reachable at ${config.caddyEndpoint}; skipping bootstrap`)
     }
 
     const app = createApp<NoEvents, { rpc: typeof rpc }>({

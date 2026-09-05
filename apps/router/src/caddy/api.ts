@@ -129,6 +129,23 @@ export interface CaddyRoute {
     handle: { handler: "reverse_proxy"; upstreams: { dial: string }[] }[]
 }
 
+/** The subset of a Caddy HTTP server this project reads and writes. */
+export interface CaddyServer {
+    listen?: string[]
+    routes?: CaddyRoute[]
+    [key: string]: unknown
+}
+
+/** The subset of a Caddy config this project reads and writes; unknown fields are preserved. */
+export interface CaddyConfig {
+    apps?: {
+        http?: { servers?: Record<string, CaddyServer>; [key: string]: unknown }
+        tls?: unknown
+        [key: string]: unknown
+    }
+    [key: string]: unknown
+}
+
 /**
  * Build the Caddy route JSON for a {@link ProxyRoute}.
  * @param route the route definition
@@ -156,6 +173,8 @@ export interface CaddyAdmin {
     removeRoute: (id: string) => Promise<boolean>
     /** List the managed routes (those carrying an `@id`) on the configured server. */
     listRoutes: () => Promise<ProxyRoute[]>
+    /** Read Caddy's entire configuration (`GET /config/`); `null` when Caddy has no config loaded. */
+    getConfig: () => Promise<CaddyConfig | null>
     /** Replace Caddy's entire configuration (`POST /load`). */
     load: (config: unknown) => Promise<void>
     /** Whether the admin API is reachable. */
@@ -203,6 +222,7 @@ export const createCaddyAdmin = (options: CaddyAdminOptions, server = "srv0"): C
             const routes = (await adminRequest<CaddyRoute[] | null>(options, "GET", routesPath(server))) ?? []
             return routes.filter(route => typeof route["@id"] === "string").map(fromCaddyRoute)
         },
+        getConfig: async () => (await adminRequest<CaddyConfig | null>(options, "GET", "/config/")) ?? null,
         load: config => adminRequest(options, "POST", "/load", config),
         reachable: async () => {
             try {

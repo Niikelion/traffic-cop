@@ -20,10 +20,16 @@ kernel-supplied Unix-socket identity, and applies that account's reverse-proxy r
 | `TRAFFIC_COP_POLICY` | — | path to a JSON policy file (`{ accounts: { <uid>: { hosts: [...] } } }`) |
 | `CADDY_ADMIN` | `http://localhost:2019` | Caddy admin endpoint (TCP or `unix//...`) |
 | `CADDY_SERVER` | `srv0` | the Caddy HTTP server routes are added to |
+| `ACME_EMAIL` | — | ACME account email for Let's Encrypt registration |
+
+## Startup
+
+On start (when Caddy is reachable) the router ensures `CADDY_SERVER` exists and listens on `:443`,
+so Caddy's automatic HTTPS covers every route added afterwards. Existing routes and unrelated config
+are preserved. The router assumes it is the sole writer of Caddy's config.
 
 ## Not yet implemented
 
-- Bootstrapping Caddy's `:443` server via `caddy.load(...)` when absent.
 - Validating and hot-reloading the policy file.
 - Restricting upstreams to a loopback address the account owns.
 
