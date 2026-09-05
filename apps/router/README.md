@@ -45,9 +45,12 @@ An invalid edit is rejected and the previous policy is kept, so a bad save canno
 
 Hostnames are exact matches or `*.suffix` wildcards. A uid with no entry is rejected.
 
-## Not yet implemented
+## Upstreams
 
-- Restricting upstreams to a loopback address the account owns.
+The upstream address is not restricted: services legitimately live on loopback, Docker bridge
+networks, or other hosts. The security boundary is host authorization (which subdomains an account
+may claim), not where that account points its own traffic. Caddy validates the dial address when the
+route is applied.
 
 ## License
 

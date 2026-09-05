@@ -41,7 +41,9 @@ export const registerRouterMethods = (rpc: LocalRpcPlugin, caddy: CaddyAdmin, ge
         if (denied.length > 0) {
             throw new LocalRpcError("FORBIDDEN", `not allowed to route: ${denied.join(", ")}`)
         }
-        // TODO: restrict `input.upstream` to a loopback address the account actually owns.
+        // Upstream is intentionally unrestricted: services live on loopback, Docker bridge
+        // networks, or other hosts. The security boundary is host authorization above, not the
+        // upstream. Caddy validates the dial address when the route is applied.
         await caddy.upsertRoute({ id: scopedId(ctx.peer.uid, input.id), host: hosts, upstream: input.upstream })
         return { id: input.id }
     })
