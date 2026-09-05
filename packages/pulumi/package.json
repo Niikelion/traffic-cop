@@ -3,6 +3,11 @@
     "version": "0.1.0",
     "license": "MIT",
     "description": "traffic-cop: a Pulumi resource for declaring a router route in a deployment",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Niikelion/traffic-cop.git",
+        "directory": "packages/pulumi"
+    },
     "type": "module",
     "main": "dist/index.cjs",
     "module": "dist/index.js",

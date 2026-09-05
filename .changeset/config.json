@@ -4,6 +4,6 @@
     "commit": false,
     "access": "public",
     "baseBranch": "master",
-    "ignore": ["@traffic-cop/router"],
+    "ignore": [],
     "updateInternalDependencies": "patch"
 }

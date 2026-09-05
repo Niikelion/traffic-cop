@@ -3,6 +3,11 @@
     "version": "0.1.0",
     "license": "MIT",
     "description": "traffic-cop: RPC contract and typed client for the router broker",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Niikelion/traffic-cop.git",
+        "directory": "packages/api"
+    },
     "type": "module",
     "main": "dist/index.cjs",
     "module": "dist/index.js",

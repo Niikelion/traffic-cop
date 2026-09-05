@@ -1,13 +1,23 @@
 {
     "name": "@traffic-cop/router",
-    "version": "0.0.0",
-    "private": true,
+    "version": "0.1.0",
     "license": "MIT",
     "description": "traffic-cop: the broker daemon that owns Caddy and applies authorized routes",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Niikelion/traffic-cop.git",
+        "directory": "apps/router"
+    },
     "type": "module",
     "main": "dist/cli.js",
     "bin": {
         "traffic-cop-router": "dist/cli.js"
+    },
+    "files": [
+        "/dist"
+    ],
+    "publishConfig": {
+        "access": "public"
     },
     "scripts": {
         "build": "tsc --noEmit && tsdown",
