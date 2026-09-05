@@ -1789,7 +1789,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@signalbox/core@npm:^0.5.1":
+"@signalbox/config@npm:^0.3.2":
+  version: 0.3.2
+  resolution: "@signalbox/config@npm:0.3.2"
+  dependencies:
+    "@signalbox/core": "npm:^0.5.0"
+    "@signalbox/secrets": "npm:^0.2.0"
+    zod: "npm:^4.0.0"
+  checksum: 10c0/b8429e82d82dcf46b45a3eb95ca70ac8e10a695c47089f6db1215324020404fd6142eb19e5e7d18de141a7cfcb6cb680034696981f1b21fad8ea3b7470ff3a62
+  languageName: node
+  linkType: hard
+
+"@signalbox/core@npm:^0.5.0, @signalbox/core@npm:^0.5.1":
   version: 0.5.1
   resolution: "@signalbox/core@npm:0.5.1"
   dependencies:
@@ -1821,6 +1832,17 @@ __metadata:
   version: 0.2.0
   resolution: "@signalbox/secrets@npm:0.2.0"
   checksum: 10c0/0892650979bcf71daad8d918b726d01b33ed09ed8ea8c3125e8fd0f6f729b23392fbb2f34039adb4d24b859eccd653c148a2eaae4eb676cf8893da5719f61f4b
+  languageName: node
+  linkType: hard
+
+"@signalbox/service-cli@npm:^0.5.0":
+  version: 0.5.0
+  resolution: "@signalbox/service-cli@npm:0.5.0"
+  dependencies:
+    "@signalbox/config": "npm:^0.3.2"
+    "@signalbox/core": "npm:^0.5.1"
+    "@signalbox/secrets": "npm:^0.2.0"
+  checksum: 10c0/4f7fa2bfb92ff0e25d556d49d9c379c99e9d3d7f6ac8082138219ca36585a033ebf3c6f62e2c188b0f0baa49e83632d2babbcc000aeef6c06ae59e268e036234
   languageName: node
   linkType: hard
 
@@ -1922,9 +1944,11 @@ __metadata:
   resolution: "@traffic-cop/router@workspace:apps/router"
   dependencies:
     "@gamedev-sensei/ts-config": "npm:^2.1.0"
+    "@signalbox/config": "npm:^0.3.2"
     "@signalbox/core": "npm:^0.5.1"
     "@signalbox/local-rpc": "npm:^0.2.0"
     "@signalbox/permissions": "npm:^0.4.0"
+    "@signalbox/service-cli": "npm:^0.5.0"
     "@traffic-cop/api": "workspace:*"
     "@types/node": "npm:^22.10.2"
     eslint: "npm:^9.39.2"
@@ -1934,7 +1958,7 @@ __metadata:
     vitest: "npm:^2.1.9"
     zod: "npm:^4.0.0"
   bin:
-    traffic-cop-router: dist/index.js
+    traffic-cop-router: dist/cli.js
   languageName: unknown
   linkType: soft
 
