@@ -36,7 +36,7 @@
         "format": "prettier --write ."
     },
     "dependencies": {
-        "@traffic-cop/api": "workspace:*"
+        "@traffic-cop/api": "^0.1.0"
     },
     "peerDependencies": {
         "@pulumi/pulumi": "^3.0.0"

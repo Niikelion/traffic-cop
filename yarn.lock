@@ -1904,7 +1904,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@traffic-cop/api@workspace:*, @traffic-cop/api@workspace:packages/api":
+"@traffic-cop/api@npm:^0.1.0, @traffic-cop/api@workspace:packages/api":
   version: 0.0.0-use.local
   resolution: "@traffic-cop/api@workspace:packages/api"
   dependencies:
@@ -1928,7 +1928,7 @@ __metadata:
     "@arethetypeswrong/core": "npm:^0.18.2"
     "@gamedev-sensei/ts-config": "npm:^2.1.0"
     "@pulumi/pulumi": "npm:^3.0.0"
-    "@traffic-cop/api": "workspace:*"
+    "@traffic-cop/api": "npm:^0.1.0"
     "@types/node": "npm:^22.10.2"
     eslint: "npm:^9.39.2"
     prettier: "npm:^3.8.1"
@@ -1949,7 +1949,7 @@ __metadata:
     "@signalbox/local-rpc": "npm:^0.2.0"
     "@signalbox/permissions": "npm:^0.4.0"
     "@signalbox/service-cli": "npm:^0.6.0"
-    "@traffic-cop/api": "workspace:*"
+    "@traffic-cop/api": "npm:^0.1.0"
     "@types/node": "npm:^22.10.2"
     eslint: "npm:^9.39.2"
     prettier: "npm:^3.8.1"

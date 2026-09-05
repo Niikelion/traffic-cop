@@ -1,6 +1,6 @@
 {
     "name": "@traffic-cop/router",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "license": "MIT",
     "description": "traffic-cop: the broker daemon that owns Caddy and applies authorized routes",
     "repository": {
@@ -34,7 +34,7 @@
         "@signalbox/local-rpc": "^0.2.0",
         "@signalbox/permissions": "^0.4.0",
         "@signalbox/service-cli": "^0.6.0",
-        "@traffic-cop/api": "workspace:*",
+        "@traffic-cop/api": "^0.1.0",
         "zod": "^4.0.0"
     },
     "devDependencies": {
