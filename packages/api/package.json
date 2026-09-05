@@ -25,7 +25,8 @@
         "typecheck": "tsc --noEmit",
         "lint": "eslint src",
         "lint:fix": "eslint src --fix",
-        "format": "prettier --write ."
+        "format": "prettier --write .",
+        "test": "vitest run"
     },
     "dependencies": {
         "@signalbox/local-rpc": "^0.2.0",
@@ -38,6 +39,7 @@
         "eslint": "^9.39.2",
         "prettier": "^3.8.1",
         "tsdown": "^0.15.7",
-        "typescript": "^5.9.3"
+        "typescript": "^5.9.3",
+        "vitest": "^2.1.9"
     }
 }

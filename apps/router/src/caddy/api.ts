@@ -26,10 +26,10 @@ interface ResolvedTarget {
  * @returns connection target for {@link adminRequest}
  */
 export const resolveTarget = (endpoint: string): ResolvedTarget => {
-    if (endpoint.startsWith("unix:")) {
-        const socketPath = endpoint.slice("unix:".length).replace(/^\/(?=\/)/, "")
-        return { socketPath }
-    }
+    // Accept "unix:/path", "unix//path" (Caddy's own form), and "unix://path".
+    if (endpoint.startsWith("unix://")) return { socketPath: endpoint.slice("unix:/".length) }
+    if (endpoint.startsWith("unix//")) return { socketPath: endpoint.slice("unix/".length) }
+    if (endpoint.startsWith("unix:")) return { socketPath: endpoint.slice("unix:".length) }
 
     const url = new URL(endpoint)
     return {
