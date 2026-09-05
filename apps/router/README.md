@@ -28,9 +28,25 @@ On start (when Caddy is reachable) the router ensures `CADDY_SERVER` exists and 
 so Caddy's automatic HTTPS covers every route added afterwards. Existing routes and unrelated config
 are preserved. The router assumes it is the sole writer of Caddy's config.
 
+## Policy
+
+`TRAFFIC_COP_POLICY` points at a JSON file mapping each account's uid to the hostnames it may
+register. It is validated on load and **hot-reloaded** when the file changes — no restart needed.
+An invalid edit is rejected and the previous policy is kept, so a bad save cannot take routing down.
+
+```json
+{
+    "accounts": {
+        "1001": { "hosts": ["alice.example.com", "*.alice.example.com"] },
+        "1002": { "hosts": ["bob.example.com"] }
+    }
+}
+```
+
+Hostnames are exact matches or `*.suffix` wildcards. A uid with no entry is rejected.
+
 ## Not yet implemented
 
-- Validating and hot-reloading the policy file.
 - Restricting upstreams to a loopback address the account owns.
 
 ## License

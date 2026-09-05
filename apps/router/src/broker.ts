@@ -1,18 +1,7 @@
 import { LocalRpcError, type LocalRpcPlugin } from "@signalbox/local-rpc"
 import { listRoutes, removeRoute, upsertRoute } from "@traffic-cop/api"
 import type { CaddyAdmin } from "./caddy/api"
-
-/** What one account (identified by uid) is allowed to register. */
-export interface AccountPolicy {
-    /** Exact hostnames or `"*.suffix"` wildcards this account may route. */
-    hosts: string[]
-}
-
-/** The authorization policy: which uid may register which hostnames. */
-export interface RouterPolicy {
-    /** Keyed by caller uid. */
-    accounts: Record<number, AccountPolicy>
-}
+import type { AccountPolicy, RouterPolicy } from "./policy"
 
 const hostMatches = (allowed: string, host: string): boolean => {
     if (allowed === host) return true
@@ -36,11 +25,11 @@ const asArray = (host: string | string[]): string[] => (Array.isArray(host) ? ho
  * Caller identity comes from `ctx.peer.uid` (kernel-supplied), never from the request body.
  * @param rpc the local-rpc plugin instance
  * @param caddy the Caddy admin client
- * @param policy the authorization policy
+ * @param getPolicy returns the current authorization policy (re-read per call so hot reloads apply)
  */
-export const registerRouterMethods = (rpc: LocalRpcPlugin, caddy: CaddyAdmin, policy: RouterPolicy): void => {
+export const registerRouterMethods = (rpc: LocalRpcPlugin, caddy: CaddyAdmin, getPolicy: () => RouterPolicy): void => {
     const accountFor = (uid: number): AccountPolicy => {
-        const account = policy.accounts[uid]
+        const account = getPolicy().accounts[String(uid)]
         if (!account) throw new LocalRpcError("FORBIDDEN", `uid ${String(uid)} is not a registered account`)
         return account
     }
