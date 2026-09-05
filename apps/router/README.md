@@ -43,6 +43,20 @@ On start (when Caddy is reachable) the router ensures `caddyServer` exists and l
 so Caddy's automatic HTTPS covers every route added afterwards. Existing routes and unrelated config
 are preserved. The router assumes it is the sole writer of Caddy's config.
 
+## Deployment
+
+`traffic-cop-router setup` installs the systemd service under a dedicated `traffic-cop` system
+account and creates the `/run/traffic-cop` runtime directory for the socket. The service account's
+primary group (`traffic-cop`) gates access to the socket — add a service account to it to let that
+account register routes:
+
+```bash
+sudo usermod -aG traffic-cop <service-account>
+```
+
+The account's uid must also appear in the policy file. Caller access therefore needs both: group
+membership (to reach the socket) and a policy entry (to authorize specific hostnames).
+
 ## Policy
 
 `policyPath` points at a JSON file mapping each account's uid to the hostnames it may register. It is

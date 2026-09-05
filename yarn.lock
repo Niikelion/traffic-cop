@@ -1835,14 +1835,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@signalbox/service-cli@npm:^0.5.0":
-  version: 0.5.0
-  resolution: "@signalbox/service-cli@npm:0.5.0"
+"@signalbox/service-cli@npm:^0.6.0":
+  version: 0.6.0
+  resolution: "@signalbox/service-cli@npm:0.6.0"
   dependencies:
     "@signalbox/config": "npm:^0.3.2"
     "@signalbox/core": "npm:^0.5.1"
     "@signalbox/secrets": "npm:^0.2.0"
-  checksum: 10c0/4f7fa2bfb92ff0e25d556d49d9c379c99e9d3d7f6ac8082138219ca36585a033ebf3c6f62e2c188b0f0baa49e83632d2babbcc000aeef6c06ae59e268e036234
+  checksum: 10c0/2c36928360af493b55b646e334f95a6134830677eca091afebfe3dbfa8e11c4a33cf61560bfdd85cd65b5c7badfdc61979b16c2f72e59d818fd36488d7a0d8c1
   languageName: node
   linkType: hard
 
@@ -1948,7 +1948,7 @@ __metadata:
     "@signalbox/core": "npm:^0.5.1"
     "@signalbox/local-rpc": "npm:^0.2.0"
     "@signalbox/permissions": "npm:^0.4.0"
-    "@signalbox/service-cli": "npm:^0.5.0"
+    "@signalbox/service-cli": "npm:^0.6.0"
     "@traffic-cop/api": "workspace:*"
     "@types/node": "npm:^22.10.2"
     eslint: "npm:^9.39.2"
