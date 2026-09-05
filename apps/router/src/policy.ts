@@ -1,4 +1,4 @@
-import { readFileSync, watch, type FSWatcher } from "node:fs"
+import { existsSync, readFileSync, watch, type FSWatcher } from "node:fs"
 import { basename, dirname, resolve } from "node:path"
 import { z } from "zod"
 
@@ -33,10 +33,24 @@ export interface PolicyStore {
 /** Parse and validate a policy file's contents. Throws if the file is invalid. */
 const parsePolicy = (path: string): RouterPolicy => routerPolicySchema.parse(JSON.parse(readFileSync(path, "utf8")))
 
+/** The deepest ancestor of `dir` (including itself) that currently exists. */
+const nearestExistingDir = (dir: string): string => {
+    let current = dir
+    while (!existsSync(current)) {
+        const parent = dirname(current)
+        if (parent === current) return current
+        current = parent
+    }
+    return current
+}
+
 /**
- * Load the policy from a file and keep it up to date as the file changes. If no path is given, or
- * the file cannot be read or fails validation, the store falls back to the last good policy (an
- * empty policy at startup) rather than crashing — a bad edit must not take routing down.
+ * Load the policy from a file and keep it up to date as the file changes. Tolerant by design:
+ * - no path, an unreadable file, or an invalid one falls back to the last good policy (empty at
+ *   startup) rather than crashing — a bad edit must not take routing down;
+ * - the policy file's directory need not exist yet. The store watches the nearest existing ancestor
+ *   and re-attaches deeper as directories appear, so a policy dropped in later is picked up live
+ *   without a restart.
  * @param path the policy file path, or undefined for an always-empty policy
  * @param hooks optional callbacks for reload success and failure (for logging)
  * @returns a store exposing the current policy and a `close`
@@ -60,29 +74,46 @@ export const createPolicyStore = (
     reload()
 
     let watcher: FSWatcher | undefined
+    let timer: NodeJS.Timeout | undefined
+    let closed = false
+
     if (path !== undefined) {
         const absolute = resolve(path)
-        const directory = dirname(absolute)
+        const policyDir = dirname(absolute)
         const fileName = basename(absolute)
-        let timer: NodeJS.Timeout | undefined
 
-        try {
-            // Watch the directory, not the file, so atomic replaces (write-temp-then-rename, as
-            // editors and deploy tooling do) keep firing events instead of orphaning the watch.
-            watcher = watch(directory, { persistent: false }, (_event, changed) => {
-                if (changed === null || changed === fileName) {
+        const attach = (): void => {
+            if (closed) return
+            watcher?.close()
+            const watchDir = nearestExistingDir(policyDir)
+            try {
+                // Watch a directory, not the file, so atomic replaces (write-temp-then-rename) keep
+                // firing. When watching an ancestor (the policy dir doesn't exist yet), react to any
+                // change and re-check; when watching the policy dir itself, react only to its file.
+                watcher = watch(watchDir, { persistent: false }, (_event, changed) => {
+                    if (watchDir === policyDir && changed !== null && changed !== fileName) return
                     if (timer) clearTimeout(timer)
-                    timer = setTimeout(reload, RELOAD_DEBOUNCE_MS)
+                    timer = setTimeout(() => {
+                        reload()
+                        // A parent directory may have just been created — start watching deeper.
+                        if (watchDir !== policyDir && existsSync(policyDir)) attach()
+                    }, RELOAD_DEBOUNCE_MS)
                     timer.unref()
-                }
-            })
-        } catch (error) {
-            hooks.onError?.(error)
+                })
+            } catch (error) {
+                hooks.onError?.(error)
+            }
         }
+
+        attach()
     }
 
     return {
         current: () => policy,
-        close: () => watcher?.close(),
+        close: () => {
+            closed = true
+            if (timer) clearTimeout(timer)
+            watcher?.close()
+        },
     }
 }

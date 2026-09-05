@@ -28,7 +28,9 @@ export const createRouterApp = (config: TrafficCopConfig): Runnable => {
     const caddy = createCaddyAdmin({ endpoint: config.caddyEndpoint }, config.caddyServer)
     const policyStore = createPolicyStore(config.policyPath, {
         onReload: policy => {
-            console.info(`policy reloaded: ${String(Object.keys(policy.accounts).length)} account(s)`)
+            const accounts = Object.keys(policy.accounts).length
+            const groups = Object.keys(policy.groups).length
+            console.info(`policy reloaded: ${String(accounts)} account(s), ${String(groups)} group(s)`)
         },
         onError: error => {
             console.warn(`policy file invalid, keeping previous policy: ${String(error)}`)

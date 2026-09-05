@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
@@ -78,6 +78,20 @@ describe("createPolicyStore", () => {
 
         writeFileSync(path, JSON.stringify({ accounts: { "1001": { hosts: ["a.example.com"] } } }))
         await waitFor(() => store.current().accounts["1001"] !== undefined, 3000)
+
+        expect(store.current().accounts["1001"]?.hosts).toEqual(["a.example.com"])
+        store.close()
+    })
+
+    it("picks up a policy created later, even when its directory did not exist at startup", async () => {
+        const dir = join(tempDir(), "nested")
+        const path = join(dir, "policy.json")
+        const store = createPolicyStore(path)
+        expect(store.current().accounts["1001"]).toBeUndefined()
+
+        mkdirSync(dir)
+        writeFileSync(path, JSON.stringify({ accounts: { "1001": { hosts: ["a.example.com"] } } }))
+        await waitFor(() => store.current().accounts["1001"] !== undefined, 5000)
 
         expect(store.current().accounts["1001"]?.hosts).toEqual(["a.example.com"])
         store.close()
