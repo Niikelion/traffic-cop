@@ -1,17 +1,13 @@
 name: Release
 on:
     push:
-        branches: [main]
-
-concurrency: release-${{ github.ref }}
-
+        branches:
+            - main
 jobs:
     release:
         runs-on: ubuntu-latest
         permissions:
-            contents: write # create the version PR branch; push tags on publish
-            pull-requests: write # open/update the "Version Packages" PR
-            id-token: write # npm trusted publishing (OIDC) + provenance
+            contents: write
         steps:
             - name: Enable Corepack
               run: corepack enable
@@ -20,21 +16,22 @@ jobs:
               uses: actions/setup-node@v6
               with:
                   node-version: '24.x'
-                  cache: 'yarn'
-                  registry-url: 'https://registry.npmjs.org'
-            - name: Update npm for OIDC trusted publishing (needs >= 11.5)
-              run: npm install -g npm@latest
             - name: Install dependencies
               run: yarn install --immutable
-            - name: Version PR, or publish via OIDC
-              uses: changesets/action@v1
-              with:
-                  version: yarn changeset version
-                  publish: yarn release
-                  commit: 'chore: version packages'
-                  title: 'chore: version packages'
+            - name: Apply changesets
+              run: yarn changeset version
+            - name: Install to update internal versions in the lockfile
+              run: yarn install
               env:
-                  # Built-in token opens the Version PR and pushes tags — no secret to provide.
-                  # npm auth is OIDC (trusted publishing); no NPM_TOKEN.
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  NPM_CONFIG_PROVENANCE: 'true'
+                  YARN_ENABLE_IMMUTABLE_INSTALLS: false
+            - name: Commit and push version bump
+              run: |
+                  git config user.name github-actions[bot]
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                  git add -A
+                  if git diff --staged --quiet; then
+                      echo "No changesets to apply — nothing to release."
+                  else
+                      git commit -m "chore(release)"
+                      git push
+                  fi
