@@ -1,6 +1,6 @@
 {
     "name": "@traffic-cop/pulumi",
-    "version": "0.0.0",
+    "version": "0.1.0",
     "license": "MIT",
     "description": "traffic-cop: a Pulumi resource for declaring a router route in a deployment",
     "type": "module",
@@ -10,6 +10,9 @@
     "files": [
         "/dist"
     ],
+    "publishConfig": {
+        "access": "public"
+    },
     "exports": {
         "import": {
             "types": "./dist/index.d.ts",
