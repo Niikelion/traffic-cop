@@ -1,0 +1,43 @@
+{
+    "name": "@traffic-cop/api",
+    "version": "0.0.0",
+    "license": "MIT",
+    "description": "traffic-cop: RPC contract and typed client for the router broker",
+    "type": "module",
+    "main": "dist/index.cjs",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "/dist"
+    ],
+    "exports": {
+        "import": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        },
+        "require": {
+            "types": "./dist/index.d.cts",
+            "require": "./dist/index.cjs"
+        }
+    },
+    "scripts": {
+        "build": "tsc --noEmit && tsdown",
+        "typecheck": "tsc --noEmit",
+        "lint": "eslint src",
+        "lint:fix": "eslint src --fix",
+        "format": "prettier --write ."
+    },
+    "dependencies": {
+        "@signalbox/local-rpc": "^0.2.0",
+        "zod": "^4.0.0"
+    },
+    "devDependencies": {
+        "@arethetypeswrong/core": "^0.18.2",
+        "@gamedev-sensei/ts-config": "^2.1.0",
+        "@types/node": "^22.10.2",
+        "eslint": "^9.39.2",
+        "prettier": "^3.8.1",
+        "tsdown": "^0.15.7",
+        "typescript": "^5.9.3"
+    }
+}

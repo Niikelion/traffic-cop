@@ -1,0 +1,34 @@
+{
+    "name": "traffic-cop",
+    "private": true,
+    "packageManager": "yarn@4.18.0",
+    "workspaces": [
+        "packages/*",
+        "apps/*",
+        "!**/dist"
+    ],
+    "scripts": {
+        "build": "turbo build",
+        "typecheck": "turbo typecheck",
+        "lint": "turbo lint",
+        "test": "turbo test",
+        "format": "turbo format",
+        "changeset": "changeset",
+        "release": "turbo build && changeset publish"
+    },
+    "devDependencies": {
+        "@changesets/cli": "^2.29.7",
+        "@eslint/js": "^9.18.0",
+        "@gamedev-sensei/ts-config": "^2.1.0",
+        "eslint": "^9.39.2",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-prettier": "^5.5.5",
+        "eslint-plugin-sonarjs": "^4.2.0",
+        "jiti": "^2.6.1",
+        "prettier": "^3.8.1",
+        "tsdown": "^0.15.7",
+        "turbo": "^2.8.20",
+        "typescript": "^5.9.3",
+        "typescript-eslint": "^8.21.0"
+    }
+}

@@ -1,0 +1,21 @@
+node_modules/
+dist/
+coverage/
+*.tgz
+
+.turbo/
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+yarn-error.log
+
+# JetBrains IDE
+.idea/
+.claude/
+
+# Working docs / roadmap
+.notes/
