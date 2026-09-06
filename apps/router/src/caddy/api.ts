@@ -243,7 +243,11 @@ export const createCaddyAdmin = (options: CaddyAdminOptions, server = "srv0"): C
             if (await exists(route.id)) {
                 await adminRequest(options, "PATCH", idPath(route.id), body)
             } else {
-                await adminRequest(options, "POST", routesPath(server), body)
+                // Insert at the front (PUT to index 0), not append. Caddy evaluates routes top-down,
+                // so a catch-all already present (e.g. the default install's welcome page) would
+                // shadow any route appended after it. Our routes carry a host matcher, so putting
+                // them first is always correct — they only match their own host.
+                await adminRequest(options, "PUT", `${routesPath(server)}/0`, body)
             }
         },
         removeRoute: async id => {

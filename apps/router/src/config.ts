@@ -5,7 +5,7 @@ export const APP_NAME = "traffic-cop-router"
 export const configSchema = config({
     caddyEndpoint: field()
         .string()
-        .default("http://localhost:2019/config/")
+        .default("http://localhost:2019")
         .describe("Caddy admin API endpoint (a TCP url or a unix// socket)"),
     caddyServer: field().string().default("srv0").describe("Caddy HTTP server name routes are added to"),
     acmeEmail: field().string().optional().describe("ACME account email for Let's Encrypt registration"),

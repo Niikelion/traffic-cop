@@ -1,6 +1,6 @@
 import { createServer } from "node:http"
 import { describe, expect, it } from "vitest"
-import { adminRequest, resolveTarget, toCaddyRoute } from "../src/caddy/api"
+import { adminRequest, createCaddyAdmin, resolveTarget, toCaddyRoute } from "../src/caddy/api"
 
 describe("resolveTarget", () => {
     it("parses a TCP url with the default admin port", () => {
@@ -50,6 +50,34 @@ describe("adminRequest", () => {
         try {
             await adminRequest({ endpoint: `http://127.0.0.1:${String(port)}` }, "GET", "/config/")
             expect(seenHost).toBe(`127.0.0.1:${String(port)}`)
+        } finally {
+            server.close()
+        }
+    })
+})
+
+describe("createCaddyAdmin.upsertRoute", () => {
+    it("prepends a new route (PUT at index 0) so it beats a catch-all", async () => {
+        let createMethod: string | undefined
+        let createUrl: string | undefined
+        const server = createServer((req, res) => {
+            if (req.method === "GET" && req.url?.startsWith("/id/")) {
+                res.statusCode = 404
+                res.end('{"error":"unknown object id"}')
+                return
+            }
+            createMethod = req.method
+            createUrl = req.url
+            res.end("{}")
+        })
+        await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve))
+        const address = server.address()
+        const port = typeof address === "object" && address !== null ? address.port : 0
+        try {
+            const caddy = createCaddyAdmin({ endpoint: `http://127.0.0.1:${String(port)}` }, "srv0")
+            await caddy.upsertRoute({ id: "financer", host: "financer.local", upstream: "127.0.0.1:43117" })
+            expect(createMethod).toBe("PUT")
+            expect(createUrl).toBe("/config/apps/http/servers/srv0/routes/0")
         } finally {
             server.close()
         }

@@ -1,5 +1,11 @@
 # @traffic-cop/router
 
+## 0.1.3
+
+### Patch Changes
+
+- Insert new Caddy routes at the front instead of appending them. Caddy evaluates routes top-down, so a catch-all already on the server (such as the default install's welcome page) would shadow any route appended after it. Routes carry a host matcher, so placing them first is always correct.
+
 ## 0.1.2
 
 ### Patch Changes
