@@ -57,7 +57,7 @@ describe("adminRequest", () => {
 })
 
 describe("createCaddyAdmin.upsertRoute", () => {
-    it("prepends a new route (PUT at index 0) so it beats a catch-all", async () => {
+    it("appends a new route to the server's route list", async () => {
         let createMethod: string | undefined
         let createUrl: string | undefined
         const server = createServer((req, res) => {
@@ -76,8 +76,8 @@ describe("createCaddyAdmin.upsertRoute", () => {
         try {
             const caddy = createCaddyAdmin({ endpoint: `http://127.0.0.1:${String(port)}` }, "srv0")
             await caddy.upsertRoute({ id: "financer", host: "financer.local", upstream: "127.0.0.1:43117" })
-            expect(createMethod).toBe("PUT")
-            expect(createUrl).toBe("/config/apps/http/servers/srv0/routes/0")
+            expect(createMethod).toBe("POST")
+            expect(createUrl).toBe("/config/apps/http/servers/srv0/routes")
         } finally {
             server.close()
         }

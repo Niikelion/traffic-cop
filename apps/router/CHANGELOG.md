@@ -1,5 +1,11 @@
 # @traffic-cop/router
 
+## 0.1.4
+
+### Patch Changes
+
+- Append new Caddy routes again instead of inserting at the front. The prepend added in 0.1.3 was only needed to beat the default install's catch-all welcome route; running Caddy in API mode (`caddy-api.service`) has no such catch-all, so appending is simpler and sufficient.
+
 ## 0.1.3
 
 ### Patch Changes
