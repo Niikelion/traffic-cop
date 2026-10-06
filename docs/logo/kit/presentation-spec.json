@@ -1,0 +1,31 @@
+{
+  "brand": "traffic-cop",
+  "tagline": "HTTP routing for a private server with multiple service accounts",
+  "brief": "A broker that owns Caddy and TLS on a private server, authorizes each service account by its OS uid, and applies only the routes that account is allowed. For developers and self-hosters.",
+  "adjectives": ["precise", "trustworthy", "calm", "in control"],
+  "criteria": "Success: reads as a cop at a glance, avoids network/shield/globe clichés, recognizable at 16 px, works in one colour.",
+  "industry": "software",
+  "nav": ["Docs", "Packages", "GitHub"],
+  "brand_color": "#16233F",
+  "greyscale": false,
+  "designer": "traffic-cop",
+  "round": 2,
+  "concepts": [
+    {
+      "name": "Traffic-light cap",
+      "symbol": "traffic-cop-symbol-color.svg",
+      "lockup": "traffic-cop-horizontal.svg",
+      "symbol_on_tile": "traffic-cop-symbol-reversed.svg",
+      "lockup_on_dark": "traffic-cop-horizontal-reversed.svg",
+      "tile_color": "#16233F",
+      "idea": "A peaked police cap whose band carries a traffic light.",
+      "rationale": [
+        "The cop is the name: no explanation needed",
+        "Red, yellow, green lights: the traffic half of the name",
+        "Built on exact 15°/60°/105° angles; small-size cut for favicons"
+      ]
+    }
+  ],
+  "recommendation": "Road-band cap in police navy with traffic-light accents, set with Barlow SemiBold (a typeface designed after highway signs).",
+  "next_steps": ["Add the favicon set to docs and README", "Use the horizontal lockup in the README header", "Run a trademark search before any public launch"]
+}

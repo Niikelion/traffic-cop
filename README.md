@@ -1,4 +1,9 @@
-# traffic-cop
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo/kit/traffic-cop-horizontal-reversed.svg">
+    <img alt="traffic-cop" src="docs/logo/kit/traffic-cop-horizontal.svg" height="64">
+  </picture>
+</h1>
 
 HTTP routing for a private server with multiple service accounts. A single [Caddy](https://caddyserver.com)
 instance owns `:80`/`:443` and all TLS (automatic Let's Encrypt); a broker authorizes each service
